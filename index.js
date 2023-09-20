@@ -3,6 +3,7 @@ const app = express()
 
 app.use(express.json())
 
+
 let persons = 
 [
     { 
@@ -44,6 +45,12 @@ app.get('/api/persons', (request, response) => {
   response.json(persons)
 })
 
+app.get('/api/persons/:id', (request, response) => {
+  const id = Number (request.params.id)
+  const person = persons.find(person => person.id === id)
+  response.json(person)
+})
+
 app.delete('/api/persons/:id', (request, response) => {
   const id = Number(request.params.id)
   persons = persons.filter(person => person.id !== id)
@@ -58,6 +65,16 @@ const generateId = () => {
   return maxId + 1
 }
 
+const requestLogger = (request, response, next) => {
+  console.log('Method:', request.method)
+  console.log('Path:  ', request.path)
+  console.log('Body:  ', request.body)
+  console.log('---')
+  next()
+}
+
+app.use(requestLogger)
+
 app.post('/api/persons', (request, response) => {
   const body = request.body
   if (!body.name) {
@@ -70,6 +87,14 @@ app.post('/api/persons', (request, response) => {
         error: 'content missing' 
       })
   }
+  const personexistent = persons.filter(person => person.name === body.name)
+  console.log (personexistent)
+
+  if (personexistent.name!=="") {
+    return response.status(400).json({ 
+      error: 'name must be unique' 
+    })
+}
 
   const person = {
     name: body.name,
@@ -81,6 +106,13 @@ app.post('/api/persons', (request, response) => {
 
   response.json(persons)
 })
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+
+app.use(unknownEndpoint)
+
 
 const PORT = 3001
 app.listen(PORT, () => {
